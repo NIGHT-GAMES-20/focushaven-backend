@@ -1,6 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import MD5 from 'crypto-js/md5.js'
+
 
 export default async function LoginBackend(client) {
 
@@ -32,7 +32,7 @@ export default async function LoginBackend(client) {
 			});
 		  }
 		  
-		  const validPassword = MD5(user.password).toString() === password;
+		  const validPassword = user.password === password;
 		  
 		  if (!validPassword) {
 			return res.status(401).json({
