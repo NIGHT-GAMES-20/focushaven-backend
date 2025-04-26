@@ -17,6 +17,7 @@ export default async function CreateServer(client){
 
     app.use("/api/v1/login", await login(client))
     app.use("/api/v1/signin", signin)
+    app.use("/api/v1/test", (req, res) => res.status(404).json({"Test":"Testing"}));
     app.use("*name", (req, res) => res.status(404).json({"error":"Not Found"}));
 
     return app
