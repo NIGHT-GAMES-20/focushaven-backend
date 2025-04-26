@@ -1,6 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import MD5 from 'crypto-js/md5'
+import MD5 from 'crypto-js/md5.js'
 
 export default async function LoginBackend(client) {
 
