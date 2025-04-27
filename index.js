@@ -8,7 +8,7 @@ const MongoClient = mongodb.MongoClient;
 const MONGODB_USER = process.env['MONGODB_USER'];
 const MONGODB_PASSWORD = process.env['MONGODB_PASSWORD'];
 
-const uri = `mongodb+srv://${MONGODB_USER}:${MONGODB_PASSWORD}@cluster0.c0bhowt.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${MONGODB_USER}:${MONGODB_PASSWORD}${MONGODB_URI}`;
 
 const PORT = 8000;
 
