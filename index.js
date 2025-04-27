@@ -7,6 +7,7 @@ const MongoClient = mongodb.MongoClient;
 
 const MONGODB_USER = process.env['MONGODB_USER'];
 const MONGODB_PASSWORD = process.env['MONGODB_PASSWORD'];
+const MONGODB_URI = process.env['MONGODB_URI'];
 
 const uri = `mongodb+srv://${MONGODB_USER}:${MONGODB_PASSWORD}${MONGODB_URI}`;
 
