@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import login from "./api/login.router.js"
 import signin from "./api/signin.router.js"
+import notes from "./api/notes.router.js";
 import cookieParser from "cookie-parser";
 
 export default async function CreateServer(client){
@@ -16,6 +17,7 @@ export default async function CreateServer(client){
     app.use(express.json());
 
     app.use("/api/v1/login", await login(client))
+    app.use("/api/v1/notes", notes(client))
     app.use("/api/v1/signin", signin)
     app.use("/api/v1/test", (req, res) => res.status(402).json({"Test":"Testing"}));
     app.use("*name", (req, res) => res.status(404).json({"error":"Not Found"}));
