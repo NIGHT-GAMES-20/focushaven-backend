@@ -13,7 +13,7 @@ export default async function CreateServer(client){
     const app = express();
 
     app.use(cookieParser());
-    app.use(cors({ origin: `${process.env.FRONTEND_URL}`, // ✅ Allow requests from the frontend
+    app.use(cors({ origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL], // ✅ Allow requests from the frontend
       credentials: true,                // ✅ Allow credentials (cookies)
     }));
       
@@ -22,6 +22,7 @@ export default async function CreateServer(client){
     app.use("/api/v1/login", await login(client))
     app.use("/api/v1/notes", notes(client))
     app.use("/api/v1/signin", signin)
+    app.use("/api/v1/uptime-keeper", (req, res) =>  res.status(200).json({ message: "Uptime keeper is working!" }));
     app.use("/api/v1/test", (req, res) => res.status(402).json({"Test":"Testing"}));
     app.use("*name", (req, res) => res.status(404).json({"error":"Not Found"}));
 
