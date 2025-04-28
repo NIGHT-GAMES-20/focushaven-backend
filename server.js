@@ -13,7 +13,7 @@ export default async function CreateServer(client){
     const app = express();
 
     app.use(cookieParser());
-    app.use(cors({ 
+    app.use(cors({ origin: `${process.env.FRONTEND_URL}`, // ✅ Allow requests from the frontend
       credentials: true,                // ✅ Allow credentials (cookies)
     }));
       
