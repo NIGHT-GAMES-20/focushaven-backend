@@ -103,7 +103,7 @@ export default async function LoginBackend(client) {
 		res.clearCookie("authToken", {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
-			sameSite: "Lax"
+			sameSite: "None"
 		});
 		return res.json({
 			success: true,
