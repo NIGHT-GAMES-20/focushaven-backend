@@ -4,6 +4,9 @@ import login from "./api/login.router.js"
 import signin from "./api/signin.router.js"
 import notes from "./api/notes.router.js";
 import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export default async function CreateServer(client){
 
@@ -11,9 +14,10 @@ export default async function CreateServer(client){
 
     app.use(cookieParser());
     app.use(cors({
-        origin: "https://focushaven.vercel.app",  // ✅ Set frontend URL explicitly
-        credentials: true,                // ✅ Allow credentials (cookies)
+      origin: `${process.env['FRONTEND_URL']}`,  // ✅ Set frontend URL explicitly
+      credentials: true,                // ✅ Allow credentials (cookies)
     }));
+      
     app.use(express.json());
 
     app.use("/api/v1/login", await login(client))
