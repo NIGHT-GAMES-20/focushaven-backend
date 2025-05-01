@@ -7,21 +7,23 @@ export default (client) => {
   const notesCollection = db.collection('notes')
 
   // Fetch topics for a class
-  router.get('/:classId', async (req, res) => {
-    const { classId } = req.params
-
+  router.get('/:classId/:subCode', async (req, res) => {
+    const { classId, subCode } = req.params; // Destructure both classId and subCode from req.params
+  
     try {
-      const notesCursor = await notesCollection.find({ class: Number(classId) })
-      const notesArray = await notesCursor.toArray()
-
-      const topics = notesArray.map(note => note.topic)
-
-      res.json({ topics }) // only sending topic names
+      const notesArray = await notesCollection.find({
+        class: Number(classId), // Convert classId to a number
+        subCode: subCode,        // Use subCode directly from the request parameters
+      }).toArray();
+  
+      const topics = notesArray.map(note => note.topic);
+  
+      res.json({ topics }); // Send back the array of topics
     } catch (error) {
-      console.error('Error fetching topics:', error)
-      res.status(500).json({ message: 'Server Error' })
+      console.error('Error fetching topics:', error);
+      res.status(500).json({ message: 'Server Error' });
     }
-  })
+  });  
 
   return router
 }

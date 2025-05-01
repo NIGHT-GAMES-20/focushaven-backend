@@ -1,9 +1,20 @@
 import app from "./server.js";
 import mongodb from "mongodb";
 import dotenv from "dotenv";
+import { google } from 'googleapis';
+import path from 'path';
 
 dotenv.config();
 const MongoClient = mongodb.MongoClient;
+
+const serviceAccountKeyPath = './serviceAccountKey.json';
+
+const auth = new google.auth.GoogleAuth({
+  keyFile: serviceAccountKeyPath,
+  scopes: ['https://www.googleapis.com/auth/drive'],
+});
+
+const drive = google.drive({ version: 'v3', auth });
 
 const MONGODB_USER = process.env['MONGODB_USER'];
 const MONGODB_PASSWORD = process.env['MONGODB_PASSWORD'];
@@ -21,7 +32,7 @@ const PORT = 8000;
       wtimeoutMS: 2500,
     });
 
-    const server = await app(client);
+    const server = await app(client,drive);
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

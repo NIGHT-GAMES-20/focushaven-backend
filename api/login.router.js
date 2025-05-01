@@ -1,11 +1,13 @@
 import express from "express";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 
+dotenv.config();
 
 export default async function LoginBackend(client) {
 
 	const router = express.Router();
-	const SECRET_KEY = "focusHavenletsGrowTogether";
+	const SECRET_KEY = process.env['SECRET_KEY'];
 
 	const db = client.db("username-pass");
 	const userCollection = db.collection("usernamePasswords");

@@ -3,12 +3,13 @@ import cors from "cors";
 import login from "./api/login.router.js"
 import signin from "./api/signin.router.js"
 import notes from "./api/notes.router.js";
+import notesUpdate from "./api/noteUpdate.router.js";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-export default async function CreateServer(client){
+export default async function CreateServer(client,drive){
 
     const app = express();
 
@@ -20,7 +21,8 @@ export default async function CreateServer(client){
     app.use(express.json());
 
     app.use("/api/v1/login", await login(client))
-    app.use("/api/v1/notes", notes(client))
+    app.use("/api/v1/notes", notes(client,drive))
+    app.use("/api/v1/notes/update", notesUpdate(client,drive))
     app.use("/api/v1/signin", signin)
     app.use("/api/v1/uptime-keeper", (req, res) =>  res.status(200).json({ message: "Uptime keeper is working!" }));
     app.use("/api/v1/test", (req, res) => res.status(402).json({"Test":"Testing"}));
