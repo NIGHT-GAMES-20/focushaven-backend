@@ -78,18 +78,18 @@ export default (client,drive) => {
 
       if(user.admin === true){
         await updateDB(client,drive);
-        res.status(200).json({
+        return res.status(200).json({
           success: true,
           message: "Database Updated"
         });
       } else{
-        res.status(401).json({
+        return res.status(401).json({
           success: false,
           message: "Authentication Failed"
         });
       }
     }catch(err){
-      res.status(401).json({
+      return res.status(401).json({
         success: false,
         error: `${err}`
       });

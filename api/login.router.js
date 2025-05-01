@@ -76,7 +76,7 @@ export default async function LoginBackend(client) {
 	});
 
 	// ✅ Protected Route - Verifies Authentication
-	router.get("/protected", (req, res) => {
+	router.get("/protected", async (req, res) => {
 		const token = req.cookies.authToken; // Extract token from cookie
 
 		if (!token) {
@@ -88,9 +88,17 @@ export default async function LoginBackend(client) {
 
 		try {
 			const decoded = jwt.verify(token, SECRET_KEY);
+			const user = await userCollection.findOne({FHiD: parseInt(decoded.username)})
+			if (!user) {
+				return res.status(401).json({
+					success: false,
+					message: "User Not Found"
+				});
+			}
 			return res.json({
 				success: true,
-				user: decoded
+				user: decoded,
+				admin: user.admin
 			});
 		} catch (error) {
 			return res.status(403).json({
@@ -99,6 +107,7 @@ export default async function LoginBackend(client) {
 			});
 		}
 	});
+
 
 	// ✅ Logout Route - Clears the Authentication Cookie
 	router.post("/logout", (req, res) => {
