@@ -25,7 +25,7 @@ export default async function noteDownload(client, drive) {
             res.setHeader('Content-Type', 'application/octet-stream')
         
             driveResponse.data
-                .on('end', () => res.status(200).send('File downloaded successfully'))
+                .on('end', () => {})
                 .on('error', (err) => {
                 res.status(500).send(`Error downloading file.: ${err}`)
                 })
