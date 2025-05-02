@@ -61,7 +61,13 @@ export async function updateDB(client,drive){
 export default (client,drive) => {
 
   router.post('/', async (req, res) => { 
-    const { authToken } = req.body; 
+    const authToken = req.cookies.authToken;
+    if (!authToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication Failed"
+      });
+    }
     
     try{
       const decoded = jwt.verify(authToken, process.env['SECRET_KEY']);
