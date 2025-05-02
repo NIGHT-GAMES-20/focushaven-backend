@@ -35,6 +35,7 @@ export async function updateDB(client,drive){
   const db = client.db('focushaven')
   const notesCollection = db.collection('notes')
   const files = await listFilesInFolder(drive);
+  console.log(files)
   const existingFilesNotesCursor = await notesCollection.find({}, { projection: { topic: 1 } }).toArray();
   const existingFileTopics = existingFilesNotesCursor.map(f => f.topic); 
 
@@ -42,16 +43,18 @@ export async function updateDB(client,drive){
     if (!existingFileTopics.includes(file.name)) {
   
       const parts = file.name.split(".");
-    
-      const topic = parts.slice(0, -2).join(".").trim(); // everything before the last 2 dots
-      const className = parts[parts.length - 2].trim();  // second last part
-      const subject = parts[parts.length - 1].trim();    // last part
-    
-      await db.collection('files').insertOne({
+
+      const extension = parts[parts.length - 1].trim();       // last part (e.g. pdf)
+      const subject = parts[parts.length - 2].trim();         // second last part (e.g. Chemistry)
+      const className = parts[parts.length - 3].trim();       // third last part (e.g. 11)
+      const topic = parts.slice(0, -3).join(".").trim();      // everything before
+      
+      await notesCollection.insertOne({
         class: className,
         topic: topic,
         sub : subject,
         url :file.id,
+        extension: extension,
       });
     }
   }
