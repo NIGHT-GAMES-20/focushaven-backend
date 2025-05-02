@@ -40,7 +40,7 @@ export async function updateDB(client,drive){
   const existingFileTopics = existingFilesNotesCursor.map(f => f.topic); 
 
   for (const file of files) {
-    if (!existingFileTopics.includes(file.name)) {
+    
   
       const parts = file.name.split(".");
 
@@ -49,16 +49,17 @@ export async function updateDB(client,drive){
       const className = parts[parts.length - 3].trim();       // third last part (e.g. 11)
       const topic = parts.slice(0, -3).join(".").trim();      // everything before
       
-      await notesCollection.insertOne({
-        class: className,
-        topic: topic,
-        sub : subject,
-        url :file.id,
-        extension: extension,
+      if(!existingFileTopics.includes(topic)){
+        await notesCollection.insertOne({
+          class: className,
+          topic: topic,
+          sub : subject,
+          url :file.id,
+          extension: extension,
       });
     }
+    
   }
-
 }
 
 export default (client,drive) => {
