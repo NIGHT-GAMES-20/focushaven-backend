@@ -71,10 +71,9 @@ export default (client,drive) => {
     
     try{
       const decoded = jwt.verify(authToken, process.env['SECRET_KEY']);
-      username = decoded.username;
       const UserDB = client.db("username-pass");
       const userCollection = UserDB.collection("usernamePasswords");
-      const user = await userCollection.findOne({username: username});
+      const user = await userCollection.findOne({username: decoded.username});
       if (!user) {
         return res.status(401).json({
           success: false,
