@@ -9,14 +9,13 @@ export default (client) => {
   // Fetch topics for a class
   router.get('/:classId/:subCode', async (req, res) => {
     const { classId, subCode } = req.params; // Destructure both classId and subCode from req.params
-  
     try {
       const notesArray = await notesCollection.find({
-        class: Number(classId), // Convert classId to a number
-        subCode: subCode,        // Use subCode directly from the request parameters
+        class: classId, // Convert classId to a number
+        sub: subCode,        // Use subCode directly from the request parameters
       }).toArray();
-  
-      const topics = notesArray.map(note => note.topic);
+      
+      const topics = notesArray.map(note => note.topic); // Log the topics array
   
       res.json({ topics }); // Send back the array of topics
     } catch (error) {
