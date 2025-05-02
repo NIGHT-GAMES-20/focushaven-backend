@@ -88,7 +88,8 @@ export default async function LoginBackend(client) {
 
 		try {
 			const decoded = jwt.verify(token, SECRET_KEY);
-			const user = await userCollection.findOne({FHiD: decoded.username})
+			const user = await userCollection.findOne({username: decoded.username})
+			console.log(decoded.username)
 			if (!user) {
 				return res.status(401).json({
 					success: false,
