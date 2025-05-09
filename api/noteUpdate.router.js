@@ -35,10 +35,10 @@ export async function updateDB(client,drive){
   const db = client.db('focushaven')
   const notesCollection = db.collection('notes')
   const files = await listFilesInFolder(drive);
-  console.log(files)
   const existingFilesNotesCursor = await notesCollection.find({}, { projection: { topic: 1 } }).toArray();
   const existingFileTopics = existingFilesNotesCursor.map(f => f.topic); 
 
+  const newTopics = [];
   for (const file of files) {
     
   
@@ -58,7 +58,14 @@ export async function updateDB(client,drive){
           extension: extension,
       });
     }
+    newTopics.push(topic);
     
+  }
+  
+  for(const existingFileTopic of existingFileTopics){
+    if(!newTopics.includes(existingFileTopic)){
+      await notesCollection.deleteOne({topic: existingFileTopic});
+    }
   }
 }
 
