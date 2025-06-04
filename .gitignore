@@ -1,3 +1,6 @@
 .vercel
 .env
 serviceAccountKey.json
+astradbTester.js
+inference-api.js
+astraDbTester2.ts

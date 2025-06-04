@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@datastax/astra-db-ts": "^2.0.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypt-js": "^1.0.4",

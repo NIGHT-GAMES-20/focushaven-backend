@@ -2,27 +2,18 @@ import app from "./server.js";
 import mongodb from "mongodb";
 import dotenv from "dotenv";
 import { google } from 'googleapis';
+import { DataAPIClient } from "@datastax/astra-db-ts";
+
 
 dotenv.config();
 const MongoClient = mongodb.MongoClient;
-
+const BACKEND_URL = process.env['BACKEND_URL'];
 const serviceAccountKeyPath = './serviceAccountKey.json';
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: serviceAccountKeyPath,
-  scopes: ['https://www.googleapis.com/auth/drive'],
-});
 
-const drive = google.drive({ version: 'v3', auth });
-
-const MONGODB_USER = process.env['MONGODB_USER'];
-const MONGODB_PASSWORD = process.env['MONGODB_PASSWORD'];
-const MONGODB_URI = process.env['MONGODB_URI'];
-const BACKEND_URL = process.env['BACKEND_URL'];
-
-const uri = `mongodb+srv://${MONGODB_USER}:${MONGODB_PASSWORD}${MONGODB_URI}`;
-
+const uri = `mongodb+srv://${process.env['MONGODB_USER']}:${process.env['MONGODB_PASSWORD']}${process.env['MONGODB_URI']}`;
 const PORT = 8000;
+
 
 (async () => {
   try {
@@ -31,7 +22,16 @@ const PORT = 8000;
       wtimeoutMS: 2500,
     });
 
-    const server = await app(client,drive);
+    const auth = new google.auth.GoogleAuth({
+      keyFile: serviceAccountKeyPath,
+      scopes: ['https://www.googleapis.com/auth/drive'],
+    });
+    const drive = google.drive({ version: 'v3', auth });
+
+    const AstraClient = new DataAPIClient(process.env['ASTRA_DB_CLIENT_TOKEN']);
+    const AstraDB = AstraClient.db(process.env['ASTRA_DB_URI']);
+    
+    const server = await app(client,drive, AstraDB);
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
