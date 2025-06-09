@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { text } from 'express';
 import fetch from 'node-fetch';
 
 export default async function questions(client,AstraDB) {
@@ -12,8 +12,8 @@ export default async function questions(client,AstraDB) {
         const skip = (page - 1) * pageSize;
 
         try {
-            const questions = await questionsCollection.find({},{ projection: { question: 1, _id: 0 }}).sort({ createdAt: -1 }).skip(skip).limit(pageSize).toArray();
-            res.json({ success: true, questions: questions });
+            const questions = await questionsCollection.find({},{ projection: { text: 1 }}).sort({ createdAt: -1 }).skip(skip).limit(pageSize).toArray();
+            res.json({ success: true, questions: questions});
         } catch (err) {
             res.status(500).json({ message: 'Internal server error' , error: err.message });
         }
