@@ -39,10 +39,8 @@ export default async function questions(client,AstraDB) {
         if( Object.keys(searchVector).length !== 1024) {
             return res.status(searchVector.status || 500).json({ message: searchVector.error || 'Error processing search vector' });
         }
-        console.log("Search Vector: ", searchVector);
         try {
             const results = await questionsCollection.find({},{ projection: { text: 1}, sort: { $vector: searchVector }}).limit(pageSize).toArray();
-            console.log("Search Results: ", results);
             res.json({ success: true, results: results });
         } catch (err) {
             res.status(500).json({ message: 'Internal server error', error: err.message });
