@@ -29,7 +29,7 @@ export default async function questions(client,AstraDB) {
         }
     });
 
-    router.post("/search/questions", async (req, res) => {
+    router.get("/search/questions", async (req, res) => {
         const searchText = req.body.search;
         if (!searchText) {
             return res.status(400).json({ message: 'Search text is required' });
