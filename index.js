@@ -30,7 +30,12 @@ const PORT = 8000;
 
     const AstraClient = new DataAPIClient(process.env['ASTRA_DB_CLIENT_TOKEN']);
     const AstraDB = AstraClient.db(process.env['ASTRA_DB_URI']);
-    
+
+    setInterval(() => {
+      console.log("47 hours passed, running task.");
+      AstraDB.collection("questions").countDocuments({},Number.MAX_SAFE_INTEGER);
+    }, 47 * 60 * 60 * 1000);
+  
     const server = await app(client,drive, AstraDB);
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
