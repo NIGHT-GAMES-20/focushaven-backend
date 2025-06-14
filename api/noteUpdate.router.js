@@ -32,8 +32,7 @@ export async function listFilesInFolder(drive) {
 
 export async function updateDB(client,drive){
 
-  const db = client.db('focushaven')
-  const notesCollection = db.collection('notes')
+  const notesCollection = client.collection('notes')
   const files = await listFilesInFolder(drive);
   const existingFilesNotesCursor = await notesCollection.find({}, { projection: { topic: 1 } }).toArray();
   const existingFileTopics = existingFilesNotesCursor.map(f => f.topic); 
@@ -82,8 +81,7 @@ export default (client,drive) => {
     
     try{
       const decoded = jwt.verify(authToken, process.env['SECRET_KEY']);
-      const UserDB = client.db("username-pass");
-      const userCollection = UserDB.collection("usernamePasswords");
+      const userCollection = client.collection("username_passwords");
       const user = await userCollection.findOne({username: decoded.username});
       if (!user) {
         return res.status(401).json({

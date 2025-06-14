@@ -9,8 +9,7 @@ export default async function LoginBackend(client) {
 	const router = express.Router();
 	const SECRET_KEY = process.env['SECRET_KEY'];
 
-	const db = client.db("username-pass");
-	const userCollection = db.collection("usernamePasswords");
+	const userCollection = client.collection("username_passwords");
 
 	function isNumeric(str) {
 		return !isNaN(str) && !isNaN(parseFloat(str));

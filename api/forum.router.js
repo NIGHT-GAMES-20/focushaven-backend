@@ -1,7 +1,7 @@
 import express, { text } from 'express';
 import fetch from 'node-fetch';
 
-export default async function questions(client,AstraDB) {
+export default async function questions(AstraDB) {
     const router = express.Router();
     const questionsCollection = AstraDB.collection("questions");
 

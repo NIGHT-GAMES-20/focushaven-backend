@@ -3,8 +3,7 @@ import { Router } from 'express'
 const router = Router()
 
 export default (client) => {
-  const db = client.db('focushaven')
-  const notesCollection = db.collection('notes')
+  const notesCollection = client.collection('notes')
 
   // Fetch topics for a class
   router.get('/:classId/:subCode', async (req, res) => {

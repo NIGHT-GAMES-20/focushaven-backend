@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import fs from 'fs/promises';
 
-const TARGET_SIZE_KB = 50;
+const TARGET_SIZE_KB = 100;
 
 async function compressWithEstimate(inputPath, outputPath) {
   const inputBuffer = await fs.readFile(inputPath);
@@ -27,4 +27,4 @@ async function compressWithEstimate(inputPath, outputPath) {
   console.log(`✅ Compressed to ~${finalSizeKB.toFixed(1)}KB using estimated quality ${estimatedQuality}`);
 }
 
-compressWithEstimate('./output.jpg', './output1.jpg');
+compressWithEstimate('./input.jpg', './output1.jpg');

@@ -7,10 +7,8 @@ const router = Router()
 export default async function noteDownload(client, drive) {
     router.get('/:fileName', async (req, res) => {
         const fileName = req.params.fileName
-        
-        const db = client.db('focushaven')
-        const notesCollection = db.collection('notes')
-
+    
+        const notesCollection = client.collection('notes')
 
         const file = await notesCollection.findOne({ topic: fileName });
         const fileId = file.url; // Assuming the file ID is stored in the 'url' field

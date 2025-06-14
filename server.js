@@ -11,7 +11,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-export default async function CreateServer(client,drive,AstraDB) {
+export default async function CreateServer(client,drive) {
 
     const app = express();
 
@@ -26,7 +26,7 @@ export default async function CreateServer(client,drive,AstraDB) {
     app.use("/api/v1/notes", notes(client,drive))
     app.use("/api/v1/notes/update", notesUpdate(client,drive))
     app.use("/api/v1/downloads/notes/download", await noteDownload(client,drive))
-    app.use("/api/v1/forum", await forum(client,AstraDB))
+    app.use("/api/v1/forum", await forum(client))
     app.use("/api/v1/signin", signin)
     app.use("/api/v1/uptime-keeper", (req, res) =>  res.status(200).json({ message: "Uptime keeper is working!" }));
     app.use("/api/v1/test", (req, res) => res.status(402).json({"Test":"Testing"}));
