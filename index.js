@@ -24,7 +24,6 @@ const PORT = 8000;
     const AstraDB = AstraClient.db(process.env['ASTRA_DB_URI']);
 
     setInterval(() => {
-      console.log("47 hours passed, running task.");
       AstraDB.collection("questions").countDocuments({},Number.MAX_SAFE_INTEGER);
     }, 47 * 60 * 60 * 1000);
   
@@ -38,7 +37,6 @@ const PORT = 8000;
 })();
 
 setInterval(() => {
-  console.log('14 minutes passed, running task.')
 
   // Perform your task here
   fetch(`${BACKEND_URL}/api/v1/uptime-keeper`, {
@@ -47,7 +45,6 @@ setInterval(() => {
     body: JSON.stringify({ important: 'data' })
   })
     .then(res => res.json())
-    .then(data => console.log('Task complete:', data.message))
     .catch(err => console.error('Error:', err))
 
 }, 14 * 60 * 1000) // 14 mins in ms
