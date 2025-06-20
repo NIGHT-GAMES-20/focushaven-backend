@@ -117,7 +117,7 @@ export default function SigninBackend(client){
       service: 'gmail',
       auth: {
         user: process.env.GOOGLE_APP_USER,     // your email (e.g. myapp@gmail.com)
-        pass: process.env.GOOGLe_APP_PASSWORD,     // app password (not your Gmail password!)
+        pass: process.env.GOOGLE_APP_PASSWORD,     // app password (not your Gmail password!)
       },
     });
 
