@@ -1,4 +1,4 @@
-import express, { text } from 'express';
+import express from 'express';
 import fetch from 'node-fetch';
 
 export default async function questions(AstraDB) {

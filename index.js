@@ -2,6 +2,7 @@ import app from "./server.js";
 import dotenv from "dotenv";
 import { google } from 'googleapis';
 import { DataAPIClient } from "@datastax/astra-db-ts";
+import OTPCleanup from "./scripts/OTPCleanUp.js";
 
 
 dotenv.config();
@@ -22,6 +23,9 @@ const PORT = 8000;
 
     const AstraClient = new DataAPIClient(process.env['ASTRA_DB_CLIENT_TOKEN']);
     const AstraDB = AstraClient.db(process.env['ASTRA_DB_URI']);
+
+    // Initialize OTP Cleanup
+    OTPCleanup(AstraDB);
 
     setInterval(() => {
       AstraDB.collection("questions").countDocuments({},Number.MAX_SAFE_INTEGER);
