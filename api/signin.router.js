@@ -5,7 +5,7 @@ export default function SigninBackend(client){
 
   const router = express.Router();
   
-  router.post("/", (req, res) => {
+  router.post("/", async (req, res) => {
     const { name,username,password,email } = req.body; // Correctly extracting values
     if (!name || !username || !password ) {
       return res.status(400).json({ 
@@ -14,11 +14,11 @@ export default function SigninBackend(client){
       });
     }
 
-    const collection = client.collection("username_passwords");
-    const FHiD = generateUniqueId(collection);
+    const collection = await client.collection("username_passwords");
+    const FHiD = await generateUniqueId(collection);
 
     try {
-      collection.insertOne({
+      await collection.insertOne({
         name: name,
         username: username,
         email: email,
