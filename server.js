@@ -16,7 +16,7 @@ export default async function CreateServer(client,drive) {
     const app = express();
 
     app.use(cookieParser());
-    app.use(cors({ origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL], // ✅ Allow requests from the frontend
+    app.use(cors({ origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL, 'https://resonant-kleicha-e04d9b.netlify.app'], // ✅ Allow requests from the frontend
       credentials: true,                // ✅ Allow credentials (cookies)
     }));
       
