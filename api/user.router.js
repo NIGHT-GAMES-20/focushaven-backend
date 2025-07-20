@@ -28,5 +28,5 @@ export default async function userRoute(client){
         res.status(500).json({ error: "Internal server error" });
       });    
   });
-
+  return router
 }
