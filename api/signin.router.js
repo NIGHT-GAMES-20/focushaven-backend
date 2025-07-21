@@ -6,8 +6,8 @@ export default function SigninBackend(client){
   const router = express.Router();
   
   router.post("/", async (req, res) => {
-    const { name,username,password,email } = req.body; // Correctly extracting values
-    if (!name || !username || !password ) {
+    const { name,username,password,email,Class } = req.body; // Correctly extracting values
+    if (!name || !username || !password || !Class ) {
       return res.status(400).json({ 
         success: false, 
         message: "All fields are required." 
@@ -21,6 +21,7 @@ export default function SigninBackend(client){
       await collection.insertOne({
         name: name,
         username: username,
+        Class: Class,
         email: email,
         FHiD: FHiD,
         password: password,
