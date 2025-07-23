@@ -26,6 +26,7 @@ export default function SigninBackend(client){
         FHiD: FHiD,
         password: password,
         admin: false,
+        createdAt: new Date(),
       });
 
     } catch (error) {
