@@ -8,3 +8,4 @@ astraDbTester2.ts
 output.jpg
 input.jpg
 googleAppTester.js
+node_modules/*

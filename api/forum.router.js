@@ -60,11 +60,16 @@ router.post('/ask', async (req, res) => {
     return res.status(500).json({ success: false, message: filterResult.message, error: filterResult.error });
   }
 
+  const textInput = `${title}\n${body}\n${tags.join(', ')}`;
+  const embedding = await inferenceAPI(textInput);
+
+
   const question = {
     title,
     body,
     tags: tags,
     user,
+    $vector: embedding,
     CreatedAt: new Date(),
     Likes: 0
   }
@@ -131,7 +136,7 @@ router.post('/ask', async (req, res) => {
       return res.status(searchVector.status || 500).json({ message: searchVector.error || 'Error processing search vector' });
     }
     try {
-      const results = await questionsCollection.find({},{ projection: { text: 1}, sort: { $vector: searchVector }}).limit(pageSize).toArray();
+      const results = await questionsCollection.find({},{sort: { $vector: searchVector }}).limit(pageSize).toArray();
       res.json({ success: true, results: results });
     } catch (err) {
       res.status(500).json({ message: 'Internal server error', error: err.message });
@@ -150,7 +155,8 @@ router.post('/ask', async (req, res) => {
     if (!user) {
       return res.status(403).json({ success: false, message: "User not Found" });
     }
-    if (user.admin === false) {
+    const userDB = await AstraDB.collection("username_passwords").findOne({ username: user });
+    if (!userDB || !userDB.admin) {
       return res.status(403).json({ success: false, message: "Admin Auth Failed" });
     }
     try{
@@ -165,6 +171,105 @@ router.post('/ask', async (req, res) => {
     }
   })
 
+  router.post("/questions/approve", async (req, res) => {
+    const authToken = req.cookies.authToken;
+    if (!authToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication Failed"
+      });
+    }
+    const user = jwt.verify(authToken, process.env['SECRET_KEY']).username;
+    if (!user) {
+      return res.status(403).json({ success: false, message: "User not Found" });
+    }
+    const userDB = await AstraDB.collection("username_passwords").findOne({ username: user });
+    if (!userDB || !userDB.admin) {
+      return res.status(403).json({ success: false, message: "Admin Auth Failed" });
+    }
+
+    const { questionId, isApproved } = req.body;
+
+    if (!questionId || typeof isApproved !== 'boolean') {
+      return res.status(400).json({ success: false, message: "Invalid request data" });
+    }
+
+    try {
+      const question = await questionsHeldCollection.findOne({ _id: questionId });
+      if (!question) {
+        return res.status(404).json({ success: false, message: "Question not found" });
+      }
+
+      if (isApproved) {
+        question.status = 'published';
+        await questionsCollection.insertOne(question);
+      } else {
+        question.status = 'rejected';
+      }
+
+      await questionsHeldCollection.deleteOne({ _id: questionId });
+
+      return res.status(200).json({ success: true, message: isApproved ? "Question approved and published" : "Question rejected" });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
+    }
+
+  });
+
+  router.get("/question/data/:questionID", authMiddleware, async (req, res) => {
+    const questionID = req.params.questionID;
+    if (!questionID) {
+      return res.status(400).json({ success: false, message: "Question ID is required" });
+    }
+
+    try {
+      const question = await questionsCollection.findOne({ _id: questionID });
+      if (!question) {
+        return res.status(404).json({ success: false, message: "Question not found" });
+      }
+      return res.status(200).json({ success: true, question: question });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
+    }
+  })
+
+  router.post("/question/delete/:questionID", authMiddleware, async (req, res) => {
+    const authToken = req.cookies.authToken;
+    if (!authToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication Failed"
+      });
+    }
+    const user = jwt.verify(authToken, process.env['SECRET_KEY']);
+    if (!user) {
+      return res.status(403).json({ success: false, message: "User not Found" });
+    }
+
+    const questionID = req.params.questionID;
+    if (!questionID) {
+      return res.status(400).json({ success: false, message: "Question ID is required" });
+    }
+    try {
+      const question = await questionsCollection.findOne({ _id: questionID });
+      if (!question) {
+        return res.status(404).json({ success: false, message: "Question not found" });
+      }
+      const DBUser = await AstraDB.collection("username_passwords").findOne({ username: user.username } ,{projection: { admin: 1 }});
+      if (!DBUser) {
+        return res.status(403).json({ success: false, message: "User not Found" });
+      }
+
+    if (question.user !== user.username && DBUser.admin !== true) {
+      return res.status(403).json({ success: false, message: "You can only delete your own questions" });
+    }
+
+      await questionsCollection.deleteOne({ _id: questionID });
+      return res.status(200).json({ success: true, message: "Question deleted successfully" });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
+    }
+  })
     
   return router;
 }

@@ -96,6 +96,8 @@ export default async function LoginBackend(client) {
 			}
 			return res.json({
 				success: true,
+        name: user.name,
+        FHiD: user.FHiD,
 				user: decoded,
 				admin: user.admin
 			});
