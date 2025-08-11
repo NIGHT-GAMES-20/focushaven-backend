@@ -62,14 +62,14 @@ export default async function LoginBackend(client) {
 		  const token = jwt.sign({ username }, SECRET_KEY);
 		  
 		  res.cookie("authToken", token, {
-			httpOnly: true,
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "None"
+			  httpOnly: true,
+			  secure: process.env.NODE_ENV === "production",
+			  sameSite: "None"
 		  });
 		  
 		  return res.json({
-			success: true,
-			message: "Login successful"
+			  success: true,
+			  message: "Login successful"
 		  });
 
 	});
