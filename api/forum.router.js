@@ -71,7 +71,8 @@ router.post('/ask', async (req, res) => {
     user,
     $vector: embedding,
     CreatedAt: new Date(),
-    Likes: 0
+    Likes: 0,
+    Likers: []
   }
   
   try{
@@ -228,6 +229,54 @@ router.post('/ask', async (req, res) => {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
       return res.status(200).json({ success: true, question: question });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
+    }
+  })
+
+  router.post("/question/like", authMiddleware, async (req, res) => {
+    const { questionID } = req.body;
+    const authToken = req.cookies.authToken;
+    if (!authToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication Failed"
+      });
+    }
+
+    if (!questionID) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Question ID is required" 
+      });
+    }
+    
+    const user = jwt.verify(authToken, process.env['SECRET_KEY']).username;
+    if (!user) {
+      return res.status(403).json({ success: false, message: "Invalid JWT Auth Token" });
+    }
+
+    try {
+
+      const DBUser = await AstraDB.collection("username_passwords").findOne({ username: user });
+      if (!DBUser) {
+        return res.status(403).json({ success: false, message: "User not Found" });
+      }
+
+      const question = await questionsCollection.findOne({ _id: questionID });
+      if (!question) {
+        return res.status(404).json({ success: false, message: "Question not found" });
+      }
+      
+      if (question.Likers && question.Likers.includes(DBUser.FHiD)) {
+        return res.status(400).json({ success: false, message: "You have already liked this question" });
+      }
+
+      const updatedLikes = (question.Likes || 0) + 1;
+
+      await questionsCollection.updateOne({ _id: questionID }, { $set: { Likes: updatedLikes }, $addToSet: { Likers: DBUser.FHiD } });
+
+      return res.status(200).json({ success: true, message: "Question liked", Likes: updatedLikes });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
     }
