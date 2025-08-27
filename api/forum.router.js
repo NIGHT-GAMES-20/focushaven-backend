@@ -269,7 +269,9 @@ router.post('/ask', async (req, res) => {
       }
       
       if (question.Likers && question.Likers.includes(DBUser.FHiD)) {
-        return res.status(400).json({ success: false, message: "You have already liked this question" });
+        const updatedLikes = question.Likes > 0 ? question.Likes - 1 : 0;
+        await questionsCollection.updateOne({ _id: questionID }, { $set: { Likes: updatedLikes }, $pull: { Likers: DBUser.FHiD } });
+        return res.status(200).json({ success: true, message: "Question unliked", Likes: updatedLikes });
       }
 
       const updatedLikes = (question.Likes || 0) + 1;
