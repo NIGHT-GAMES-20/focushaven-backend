@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { analyzeContent } from '../scripts/TextFilter.js';
 import { ulid } from 'ulid';
 import crypto from "crypto";
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
@@ -17,6 +18,15 @@ export default async function questions(AstraDB) {
   const authRequests = AstraDB.collection("forum_auth_requests");
 
   const pageSize  = 10; // Number of items per page
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many authentication attempts' }
+  });
+  router.use('/auth', authLimiter);
 
   // 1️⃣ Request auth_code
   router.post("/auth/request", async (req, res) => {
