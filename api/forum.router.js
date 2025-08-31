@@ -6,6 +6,7 @@ const { v4: uuidv4 } = uuidpkg;
 import jwt from 'jsonwebtoken';
 import { analyzeContent } from '../scripts/TextFilter.js';
 import { ulid } from 'ulid';
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -13,36 +14,61 @@ export default async function questions(AstraDB) {
   const router = express.Router();
   const questionsCollection = AstraDB.collection("questions");
   const questionsHeldCollection = AstraDB.collection("questions_held_for_review");
+  const authRequests = AstraDB.collection("forum_auth_requests");
 
   const pageSize  = 10; // Number of items per page
 
-  //Forum Auth Token Generation
-  router.post("/auth/token", async (req, res) => {
-    try {
-      const origin = req.get('Origin') || '';
+  // 1️⃣ Request auth_code
+  router.post("/auth/request", async (req, res) => {
+    const { code_challenge } = req.body;
+    if (!code_challenge) return res.status(400).json({ error: "Missing code_challenge" });
 
-      const allowedOrigin = process.env['FRONTEND_URL'];
-      if (!allowedOrigin) {
-          return res.status(500).json({ message: "Server misconfigured: FRONTEND_URL not set" });
-      }
+    const auth_code = crypto.randomBytes(16).toString("hex");
+    const expiresAt = Date.now() + 45 * 1000; // 45 Seconds validity
 
-      if (!origin.includes(allowedOrigin)) {
-          return res.status(403).json({ message: 'Unauthorized origin' });
-      }
+    await authRequests.insertOne({
+      _id: auth_code,
+      code_challenge,
+      expiresAt
+    });
 
-      const secret = process.env['SECRET_KEY'];
-      if (!secret) {
-          return res.status(500).json({ message: "Server misconfigured: SECRET_KEY not set" });
-      }
-
-      const payload = { sessionId: uuidv4() };
-      const token = jwt.sign(payload, secret, { expiresIn: '5m' });
-
-      res.json({ success: true, token });
-    } catch (err) {
-      res.status(500).json({ message: 'Token generation failed', error: err.message });
-    }
+    res.json({ auth_code });
   });
+
+  // 2️⃣ Redeem auth_code with verifier → issue JWT
+  router.post("/auth/token", async (req, res) => {
+    const { auth_code, code_verifier } = req.body;
+    const record = await authRequests.findOne({ _id: auth_code });
+
+    if (!record) return res.status(400).json({ error: "Invalid auth_code" });
+    if (Date.now() > record.expiresAt) {
+      await authRequests.deleteOne({ _id: auth_code });
+      return res.status(400).json({ error: "auth_code expired" });
+    }
+
+    // Validate verifier
+    const challengeCheck = crypto
+      .createHash("sha256")
+      .update(code_verifier)
+      .digest("base64url");
+
+    if (challengeCheck !== record.code_challenge) {
+      return res.status(400).json({ error: "code_verifier mismatch" });
+    }
+
+    // Cleanup
+    await authRequests.deleteOne({ _id: auth_code });
+
+    // ✅ Issue JWT
+    const token = jwt.sign(
+      { sub: "anonymous-client", issued: Date.now() },
+      process.env['SECRET_KEY'],
+      { expiresIn: "10m" }
+    );
+
+    res.json({ success: true, token });
+  });
+
 
   //Ask Question
   router.post('/ask', async (req, res) => { 
