@@ -61,7 +61,7 @@ export default async function questions(AstraDB) {
 
     // ✅ Issue JWT
     const token = jwt.sign(
-      { sub: "anonymous-client", issued: Date.now() },
+      { sub: uuidv4(), issued: Date.now() },
       process.env['SECRET_KEY'],
       { expiresIn: "10m" }
     );
