@@ -21,7 +21,7 @@ export default async function questions(AstraDB) {
 
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 requests per windowMs
+    max: 16, // limit each IP to 16 requests per windowMs
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many authentication attempts' }
