@@ -318,14 +318,16 @@ export default async function questions(AstraDB) {
         const updatedLikes = question.Likes > 0 ? question.Likes - 1 : 0;
         const filteredLikers = (question.Likers || []).filter(id => id !== DBUser.FHiD);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { Likes: updatedLikes, Likers: filteredLikers } });
-        return res.status(200).json({ success: true, message: "Question unliked", Likes: updatedLikes });
+        const updatedQuestion = await questionsCollection.findOne({ _id: questionID });
+        return res.status(200).json({ success: true, message: "Question unliked", Likes: updatedQuestion.Likes, Likers: updatedQuestion.Likers });
       }
 
       const updatedLikes = (question.Likes || 0) + 1;
 
       await questionsCollection.updateOne({ _id: questionID }, { $set: { Likes: updatedLikes }, $addToSet: { Likers: DBUser.FHiD } });
+      const updatedQuestion = await questionsCollection.findOne({ _id: questionID });
 
-      return res.status(200).json({ success: true, message: "Question liked", Likes: updatedLikes });
+      return res.status(200).json({ success: true, message: "Question liked", Likes: updatedQuestion.Likes, Likers: updatedQuestion.Likers });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
     }
