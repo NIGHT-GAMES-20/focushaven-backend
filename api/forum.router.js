@@ -19,12 +19,19 @@ export default async function questions(AstraDB) {
 
   const pageSize  = 10; // Number of items per page
 
+  // Configure rate limiter for proxy environments
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 16, // limit each IP to 16 requests per windowMs
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Too many authentication attempts' }
+    message: { error: 'Too many authentication attempts' },
+    // Add proxy configuration to handle X-Forwarded-For header properly
+    trustProxy: true, // Enable if behind a proxy like Render, Heroku, etc.
+    keyGenerator: (req) => {
+      // Use the real IP from X-Forwarded-For header if available, otherwise fallback to req.ip
+      return req.ip || req.connection.remoteAddress;
+    }
   });
   router.use('/auth', authLimiter);
 
@@ -494,7 +501,8 @@ export default async function questions(AstraDB) {
       return res.status(400).json({ success: false, message: "Question ID and answer are required" });
     }
 
-    const filterResult = await analyzeContent([comment]);
+    // FIXED: Changed 'comment' to 'answer' in the analyzeContent call
+    const filterResult = await analyzeContent([answer]);
     if (!filterResult.success){
       return res.status(500).json({ success: false, message: filterResult.message, error: filterResult.error });
     }
@@ -518,7 +526,7 @@ export default async function questions(AstraDB) {
         answerId: ulid(),
         user: user,
         answer: answer,
-        staus: 'unverified',
+        status: 'unverified', // FIXED: Changed 'staus' to 'status'
         Likes: 0,
         Likers: [],
         CreatedAt: new Date(),
