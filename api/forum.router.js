@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import { analyzeContent } from '../scripts/TextFilter.js';
 import { ulid } from 'ulid';
 import crypto from "crypto";
-import rateLimit from 'express-rate-limit';
+import rateLimit, {ipKeyGenerator} from 'express-rate-limit';
 
 dotenv.config();
 
@@ -28,10 +28,7 @@ export default async function questions(AstraDB) {
     message: { error: 'Too many authentication attempts' },
     // Add proxy configuration to handle X-Forwarded-For header properly
     trustProxy: true, // Enable if behind a proxy like Render, Heroku, etc.
-    keyGenerator: (req) => {
-      // Use the real IP from X-Forwarded-For header if available, otherwise fallback to req.ip
-      return req.ip || req.connection.remoteAddress;
-    }
+    keyGenerator: ipKeyGenerator
   });
   router.use('/auth', authLimiter);
 
