@@ -5,7 +5,6 @@ import uuidpkg from 'uuid';
 const { v4: uuidv4 } = uuidpkg;
 import jwt from 'jsonwebtoken';
 import { analyzeContent } from '../scripts/TextFilter.js';
-import { ulid } from 'ulid';
 import crypto from "crypto";
 import rateLimit, {ipKeyGenerator} from 'express-rate-limit';
 
@@ -95,6 +94,14 @@ export default async function questions(AstraDB) {
     }
     const { title, body, tags } = req.body;
     const user = jwt.verify(authToken, process.env['SECRET_KEY']).username;
+    if (!user) {
+      return res.status(403).json({ success: false, message: "malformed " });
+    }
+    const DBUser = await AstraDB.collection("username_passwords").findOne({ username: user });
+    if (!DBUser) {
+      return res.status(403).json({ success: false, message: "User not Found" });
+    }
+
     if (!title || !body) {
       return res.status(400).json({ success: false, message: "Title and body are required" });
     }
@@ -106,17 +113,45 @@ export default async function questions(AstraDB) {
     const textInput = `${title}\n${body}\n${tags.join(', ')}`;
     const embedding = await inferenceAPI(textInput);
 
+    const userQuestionRateLimiter = DBUser.RateLimiter?.questions || {};
+    if (userQuestionRateLimiter){
+      const windowTime = 10 * 60 * 1000; // 5 minutes
+      if (userQuestionRateLimiter?.timeStamp && Date.now() - userQuestionRateLimiter.timeStamp < windowTime ){
+        return res.status(429).json({
+          success: false,
+          message: "Rate limit exceeded. Please wait before posting another question.",
+          retryAfter: Math.ceil((windowTime - (Date.now() - userQuestionRateLimiter.timeStamp)) / 1000), // in seconds
+          conflicted:{
+            lastQuestion: userQuestionRateLimiter.question,
+            lastQuestionId: userQuestionRateLimiter.questionId,
+            lastQuestionTime: new Date(userQuestionRateLimiter.timeStamp).toISOString(),
+          }
+        });
+      }
+    }
+    // Timestamp and Question ID
+    const  questionId = generateTimeBasedId();
+    const currentTime = Date.now();
 
     const question = {
+      _id: questionId,
       title,
       body,
       tags: tags,
       user,
       $vector: embedding,
-      CreatedAt: new Date(),
+      CreatedAt: currentTime,
       Likes: 0,
       Likers: []
     }
+
+    // Update User's Rate Limiter Info
+    const newQuestionRateLimiter = {
+      question: title,
+      questionId: questionId,
+      timeStamp: currentTime
+    }
+    await AstraDB.collection("username_passwords").updateOne({ username: user }, { $set: { "RateLimiter.questions": newQuestionRateLimiter } });
     
     try{
       if(filterResult.harmScore < 1.0 && filterResult.flaggedAttributes.length === 0) {
@@ -457,15 +492,46 @@ export default async function questions(AstraDB) {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
 
+      const userCommentRateLimiter = DBUser.RateLimiter?.comments || {};
+      if (userCommentRateLimiter){
+        const windowTime = 1 * 60 * 1000; // 1 minute
+        if (userCommentRateLimiter?.timeStamp && Date.now() - userCommentRateLimiter.timeStamp < windowTime ){
+          return res.status(429).json({ 
+            success: false,
+            message: "Rate limit exceeded. Please wait before posting another comment.",
+            retryAfter: Math.ceil((windowTime - (Date.now() - userCommentRateLimiter.timeStamp)) / 1000), // in seconds
+            conflicted:{
+              lastComment: userCommentRateLimiter.comment,
+              lastCommentId: userCommentRateLimiter.commentId,
+              lastCommentTime: new Date(userCommentRateLimiter.timeStamp).toISOString(),
+            }
+          });
+        }
+      }
+      //Comment ID and Timestamp
+      const commentId = generateTimeBasedId();
+      const currentTime = Date.now();
+
+      //New Comment Object
       const newComment = {
-        commentId: ulid(),
+        _id: commentId,
         user: user,
         comment: comment,
         Likes: 0,
         Likers: [],
-        CreatedAt: new Date(),
-        DeleteAt: (new Date()).setMonth((new Date()).getMonth() + 2) // Auto-delete after 2 months using Cron job
+        CreatedAt: currentTime,
+        DeleteAt: (currentTime).setMonth((currentTime).getMonth() + 2) // Auto-delete after 2 months using Cron job
       };
+
+      // Update User's Rate Limiter Info
+      const newCommentRateLimiter = {
+        comment: comment,
+        commentId: commentId,
+        timeStamp: currentTime
+      }
+
+      await AstraDB.collection("username_passwords").updateOne({ username: user }, { $set: { "RateLimiter.comments": newCommentRateLimiter } });
+
       if(filterResult.harmScore < 2.0 && filterResult.flaggedAttributes.length <= 2) {
         const updatedComments = question.comments ? [...question.comments, newComment] : [newComment];
         await questionsCollection.updateOne({ _id: questionID }, { $set: { comments: updatedComments } });
@@ -519,20 +585,50 @@ export default async function questions(AstraDB) {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
 
+
+      const userAnswerRateLimiter = DBUser.RateLimiter?.answers || {};
+      if (userAnswerRateLimiter){
+        const windowTime = 2 * 60 * 1000; // 2 minutes
+        if (userAnswerRateLimiter?.timeStamp && Date.now() - userAnswerRateLimiter.timeStamp < windowTime ){
+          return res.status(429).json({
+            success: false,
+            message: "Rate limit exceeded. Please wait before posting another answer.",
+            retryAfter: Math.ceil((windowTime - (Date.now() - userAnswerRateLimiter.timeStamp)) / 1000), // in seconds
+            conflicted:{
+              lastAnswer: userAnswerRateLimiter.answer,
+              lastAnswerId: userAnswerRateLimiter.answerId,
+              lastAnswerTime: new Date(userAnswerRateLimiter.timeStamp).toISOString(),
+            }
+          });
+        }
+      }
+      //Answer ID and Timestamp
+      const answerId = generateTimeBasedId();
+      const currentTime = Date.now();
+
+      //New Answer Object
       const newAnswer = {
-        answerId: ulid(),
+        _id: answerId,
         user: user,
         answer: answer,
         status: 'unverified', // FIXED: Changed 'staus' to 'status'
         Likes: 0,
         Likers: [],
-        CreatedAt: new Date(),
+        CreatedAt: currentTime,
       };
 
+      // Update User's Rate Limiter Info
+      const newAnswerRateLimiter = {
+        answer: answer,
+        answerId: answerId,
+        timeStamp: currentTime
+      }
+      await AstraDB.collection("username_passwords").updateOne({ username: user }, { $set: { "RateLimiter.answers": newAnswerRateLimiter } });
+
       if(filterResult.harmScore < 2.0 && filterResult.flaggedAttributes.length <= 2) {
-      const updatedAnswers = question.answers ? [...question.answers, newAnswer] : [newAnswer];
-      await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
-      return res.status(200).json({ success: true, message: "Answer added successfully", answer: newAnswer });
+        const updatedAnswers = question.answers ? [...question.answers, newAnswer] : [newAnswer];
+        await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
+        return res.status(200).json({ success: true, message: "Answer added successfully", answer: newAnswer });
       }else if (filterResult.harmScore >= 2.0 && filterResult.flaggedAttributes.length > 2){
         return res.status(400).json({
           success: false,
@@ -576,19 +672,21 @@ export default async function questions(AstraDB) {
       if (!question) {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
-      const comment = question.comments ? question.comments.find(c => c.commentId === commentID) : null;
+      const comment = question.comments ? question.comments.find(c => c._id === commentID) : null;
       if (!comment) {
         return res.status(404).json({ success: false, message: "Comment not found" });
       }
+
+
       if (comment.Likers && comment.Likers.includes(DBUser.FHiD)) {
         const updatedLikes = comment.Likes > 0 ? comment.Likes - 1 : 0;
         const filteredLikers = (comment.Likers || []).filter(id => id !== DBUser.FHiD);
-        const updatedComments = question.comments.map(c => c.commentId === commentID ? { ...c, Likes: updatedLikes, Likers: filteredLikers } : c);
+        const updatedComments = question.comments.map(c => c._id === commentID ? { ...c, Likes: updatedLikes, Likers: filteredLikers } : c);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { comments: updatedComments } });
         return res.status(200).json({ success: true, message: "Comment unliked", Likes: updatedLikes });
       }
       const updatedLikes = (comment.Likes || 0) + 1;
-      const updatedComments = question.comments.map(c => c.commentId === commentID ? { ...c, Likes: updatedLikes, Likers: [...(c.Likers || []), DBUser.FHiD] } : c);
+      const updatedComments = question.comments.map(c => c._id === commentID ? { ...c, Likes: updatedLikes, Likers: [...(c.Likers || []), DBUser.FHiD] } : c);
       await questionsCollection.updateOne({ _id: questionID }, { $set: { comments: updatedComments } });
       return res.status(200).json({ success: true, message: "Comment liked", Likes: updatedLikes });
     } catch (err) {
@@ -625,19 +723,19 @@ export default async function questions(AstraDB) {
       if (!question) {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
-      const answer = question.answers ? question.answers.find(a => a.answerId === answerID) : null;
+      const answer = question.answers ? question.answers.find(a => a._id === answerID) : null;
       if (!answer) {
         return res.status(404).json({ success: false, message: "Answer not found" });
       }
       if (answer.Likers && answer.Likers.includes(DBUser.FHiD)) {
         const updatedLikes = answer.Likes > 0 ? answer.Likes - 1 : 0;
         const filteredLikers = (answer.Likers || []).filter(id => id !== DBUser.FHiD);
-        const updatedAnswers = question.answers.map(a => a.answerId === answerID ? { ...a, Likes: updatedLikes, Likers: filteredLikers } : a);
+        const updatedAnswers = question.answers.map(a => a._id === answerID ? { ...a, Likes: updatedLikes, Likers: filteredLikers } : a);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
         return res.status(200).json({ success: true, message: "Answer unliked", Likes: updatedLikes });
       }
       const updatedLikes = (answer.Likes || 0) + 1;
-      const updatedAnswers = question.answers.map(a => a.answerId === answerID ? { ...a, Likes: updatedLikes, Likers: [...(a.Likers || []), DBUser.FHiD] } : a);
+      const updatedAnswers = question.answers.map(a => a._id === answerID ? { ...a, Likes: updatedLikes, Likers: [...(a.Likers || []), DBUser.FHiD] } : a);
       await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
       return res.status(200).json({ success: true, message: "Answer liked", Likes: updatedLikes });
     } catch (err) {
@@ -674,14 +772,14 @@ export default async function questions(AstraDB) {
       if (!question) {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
-      const comment = question.comments ? question.comments.find(c => c.commentId === commentID) : null;
+      const comment = question.comments ? question.comments.find(c => c._id === commentID) : null;
       if (!comment) {
         return res.status(404).json({ success: false, message: "Comment not found" });
       }
       if (comment.user !== user.username && DBUser.admin !== true) {
         return res.status(403).json({ success: false, message: "You can only delete your own comments" });
       }
-      const updatedComments = question.comments.filter(c => c.commentId !== commentID);
+      const updatedComments = question.comments.filter(c => c._id !== commentID);
       await questionsCollection.updateOne({ _id: questionID }, { $set: { comments: updatedComments } });
       return res.status(200).json({ success: true, message: "Comment deleted successfully" });
     } catch (err) {
@@ -718,14 +816,14 @@ export default async function questions(AstraDB) {
       if (!question) {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
-      const answer = question.answers ? question.answers.find(a => a.answerId === answerID) : null;
+      const answer = question.answers ? question.answers.find(a => a._id === answerID) : null;
       if (!answer) {
         return res.status(404).json({ success: false, message: "Answer not found" });
       }
       if (answer.user !== user.username && DBUser.admin !== true) {
         return res.status(403).json({ success: false, message: "You can only delete your own answers" });
       }
-      const updatedAnswers = question.answers.filter(a => a.answerId !== answerID);
+      const updatedAnswers = question.answers.filter(a => a._id !== answerID);
       await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
       return res.status(200).json({ success: true, message: "Answer deleted successfully" });
     } catch (err) {
@@ -766,7 +864,7 @@ export default async function questions(AstraDB) {
       if (!question) {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
-      const comment = question.comments ? question.comments.find(c => c.commentId === commentID) : null;
+      const comment = question.comments ? question.comments.find(c => c._id === commentID) : null;
       if (!comment) {
         return res.status(404).json({ success: false, message: "Comment not found" });
       }
@@ -774,7 +872,7 @@ export default async function questions(AstraDB) {
         return res.status(403).json({ success: false, message: "You can only edit your own comments" });
       }
       if(filterResult.harmScore < 2.0 && filterResult.flaggedAttributes.length <= 2) {
-        const updatedComments = question.comments.map(c => c.commentId === commentID ? { ...c, comment: newComment, EdittedAt: new Date() } : c);
+        const updatedComments = question.comments.map(c => c._id === commentID ? { ...c, comment: newComment, EdittedAt: new Date() } : c);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { comments: updatedComments } });
         return res.status(200).json({ success: true, message: "Comment updated successfully" });
       }else if (filterResult.harmScore >= 2.0 && filterResult.flaggedAttributes.length > 2){
@@ -824,7 +922,7 @@ export default async function questions(AstraDB) {
       if (!question) {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
-      const answer = question.answers ? question.answers.find(a => a.answerId === answerID) : null;
+      const answer = question.answers ? question.answers.find(a => a._id === answerID) : null;
       if (!answer) {
         return res.status(404).json({ success: false, message: "Answer not found" });
       }
@@ -832,7 +930,7 @@ export default async function questions(AstraDB) {
         return res.status(403).json({ success: false, message: "You can only edit your own answers" });
       }
       if(filterResult.harmScore < 2.0 && filterResult.flaggedAttributes.length <= 2) {
-        const updatedAnswers = question.answers.map(a => a.answerId === answerID ? { ...a, answer: newAnswer, EdittedAt: new Date(), status: 'unverified' } : a);
+        const updatedAnswers = question.answers.map(a => a._id === answerID ? { ...a, answer: newAnswer, EdittedAt: new Date(), status: 'unverified' } : a);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
         return res.status(200).json({ success: true, message: "Answer updated successfully" }); 
       }else if (filterResult.harmScore >= 2.0 && filterResult.flaggedAttributes.length > 2){
@@ -884,7 +982,7 @@ export default async function questions(AstraDB) {
         return res.status(404).json({ success: false, message: "Question not found" });
       }
 
-      const answer = question.answers ? question.answers.find(a => a.answerId === answerID) : null;
+      const answer = question.answers ? question.answers.find(a => a._id === answerID) : null;
       if (!answer) {
         return res.status(404).json({ success: false, message: "Answer not found" });
       }
@@ -893,7 +991,7 @@ export default async function questions(AstraDB) {
         return res.status(400).json({ success: false, message: "Answer is already verified" });
       }
 
-      const updatedAnswers = question.answers.map(a => a.answerId === answerID ? { ...a, status: 'verified' } : a);
+      const updatedAnswers = question.answers.map(a => a._id === answerID ? { ...a, status: 'verified' } : a);
       await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
       return res.status(200).json({ success: true, message: "Answer verified successfully" });
     } catch (err) {
@@ -946,3 +1044,21 @@ function authMiddleware(req, res, next) {
     return res.status(403).json({ message: 'Invalid or expired token' , error: err.message });
   }
 }
+
+function generateTimeBasedId(date = new Date()) {
+  const buffer = new Uint8Array(12);
+
+  // --- 6 bytes: timestamp in ms (48 bits, big-endian) ---
+  const ms = BigInt(date.getTime());
+  for (let i = 5; i >= 0; i--) {
+    buffer[i] = Number((ms >> BigInt(i * 8)) & 0xffn);
+  }
+
+  // --- 6 bytes: random entropy ---
+  crypto.getRandomValues(buffer.subarray(6));
+
+  // --- Base64 encode (URL-safe, no padding) ---
+  let b64 = btoa(String.fromCharCode(...buffer));
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
