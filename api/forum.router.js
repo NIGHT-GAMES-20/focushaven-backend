@@ -520,7 +520,7 @@ export default async function questions(AstraDB) {
         Likes: 0,
         Likers: [],
         CreatedAt: currentTime,
-        DeleteAt: (currentTime).setMonth((currentTime).getMonth() + 2) // Auto-delete after 2 months using Cron job
+        DeleteAt: (new Date(currentTime)).setMonth((new Date(currentTime)).getMonth() + 2) // Auto-delete after 2 months using Cron job
       };
 
       // Update User's Rate Limiter Info
