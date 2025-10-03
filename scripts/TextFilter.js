@@ -26,9 +26,6 @@ async function perspectiveAPI(text) {
     });
 
     const data = await response.json();
-    console.log('Perspective API input: ', text); // Debug log
-    console.log('Perspective API response:', data);
-
     if (!data.attributeScores) return {}; // fallback in case of bad result
 
     // Extract scores only
