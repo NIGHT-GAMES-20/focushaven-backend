@@ -993,7 +993,8 @@ export default async function questions(AstraDB) {
 
       const updatedAnswers = question.answers.map(a => a._id === answerID ? { ...a, status: 'verified' } : a);
       await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
-      return res.status(200).json({ success: true, message: "Answer verified successfully" });
+      const questionAfterUpdate = await questionsCollection.findOne({ _id: questionID });
+      return res.status(200).json({ success: true, message: "Answer verified successfully", question: questionAfterUpdate });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
     }
