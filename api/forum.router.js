@@ -683,12 +683,12 @@ export default async function questions(AstraDB) {
         const filteredLikers = (comment.Likers || []).filter(id => id !== DBUser.FHiD);
         const updatedComments = question.comments.map(c => c._id === commentID ? { ...c, Likes: updatedLikes, Likers: filteredLikers } : c);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { comments: updatedComments } });
-        return res.status(200).json({ success: true, message: "Comment unliked", Likes: updatedLikes });
+        return res.status(200).json({ success: true, message: "Comment unliked", Likes: updatedLikes, Likers: filteredLikers });
       }
       const updatedLikes = (comment.Likes || 0) + 1;
       const updatedComments = question.comments.map(c => c._id === commentID ? { ...c, Likes: updatedLikes, Likers: [...(c.Likers || []), DBUser.FHiD] } : c);
       await questionsCollection.updateOne({ _id: questionID }, { $set: { comments: updatedComments } });
-      return res.status(200).json({ success: true, message: "Comment liked", Likes: updatedLikes });
+      return res.status(200).json({ success: true, message: "Comment liked", Likes: updatedLikes, Likers: [...(comment.Likers || []), DBUser.FHiD] });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
     }
@@ -732,12 +732,12 @@ export default async function questions(AstraDB) {
         const filteredLikers = (answer.Likers || []).filter(id => id !== DBUser.FHiD);
         const updatedAnswers = question.answers.map(a => a._id === answerID ? { ...a, Likes: updatedLikes, Likers: filteredLikers } : a);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
-        return res.status(200).json({ success: true, message: "Answer unliked", Likes: updatedLikes });
+        return res.status(200).json({ success: true, message: "Answer unliked", Likes: updatedLikes, Likers: filteredLikers });
       }
       const updatedLikes = (answer.Likes || 0) + 1;
       const updatedAnswers = question.answers.map(a => a._id === answerID ? { ...a, Likes: updatedLikes, Likers: [...(a.Likers || []), DBUser.FHiD] } : a);
       await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
-      return res.status(200).json({ success: true, message: "Answer liked", Likes: updatedLikes });
+      return res.status(200).json({ success: true, message: "Answer liked", Likes: updatedLikes, Likers: [...(answer.Likers || []), DBUser.FHiD] });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
     }
