@@ -441,7 +441,7 @@ export default async function questions(AstraDB) {
       if (!filterResult.success){
         return res.status(500).json({ success: false, message: filterResult.message, error: filterResult.error });
       }
-      if(filterResult.harmScore < 1.0 && filterResult.flaggedAttributes.length !== 0) {
+      if(filterResult.harmScore < 1.0 && filterResult.flaggedAttributes.length === 0) {
         const textInput = `${title}\n${body}\n${tags.join(', ')}`;
         const embedding = await inferenceAPI(textInput);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { title, body, tags, $vector: embedding,EdittedAt: new Date() }});
@@ -871,11 +871,11 @@ export default async function questions(AstraDB) {
       if (comment.user !== user.username) {
         return res.status(403).json({ success: false, message: "You can only edit your own comments" });
       }
-      if(filterResult.harmScore < 2.0 && filterResult.flaggedAttributes.length <= 2) {
+      if(filterResult.harmScore < 2.0 && filterResult.flaggedAttributes.length < 2) {
         const updatedComments = question.comments.map(c => c._id === commentID ? { ...c, comment: newComment, EdittedAt: new Date() } : c);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { comments: updatedComments } });
         return res.status(200).json({ success: true, message: "Comment updated successfully" });
-      }else if (filterResult.harmScore >= 2.0 && filterResult.flaggedAttributes.length > 2){
+      }else if (filterResult.harmScore >= 2.0 && filterResult.flaggedAttributes.length >= 2){
         return res.status(400).json({
           success: false,
           message: "Comment contains harmful content and has been rejected",
@@ -929,11 +929,11 @@ export default async function questions(AstraDB) {
       if (answer.user !== user.username) {
         return res.status(403).json({ success: false, message: "You can only edit your own answers" });
       }
-      if(filterResult.harmScore < 2.0 && filterResult.flaggedAttributes.length <= 2) {
+      if(filterResult.harmScore < 2.0 && filterResult.flaggedAttributes.length < 2) {
         const updatedAnswers = question.answers.map(a => a._id === answerID ? { ...a, answer: newAnswer, EdittedAt: new Date(), status: 'unverified' } : a);
         await questionsCollection.updateOne({ _id: questionID }, { $set: { answers: updatedAnswers } });
         return res.status(200).json({ success: true, message: "Answer updated successfully" }); 
-      }else if (filterResult.harmScore >= 2.0 && filterResult.flaggedAttributes.length > 2){
+      }else if (filterResult.harmScore >= 2.0 && filterResult.flaggedAttributes.length >= 2){
         return res.status(400).json({
           success: false,
           message: "Answer contains harmful content and has been rejected",
