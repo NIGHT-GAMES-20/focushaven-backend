@@ -159,6 +159,8 @@ export default async function questions(AstraDB) {
       if(filterResult.harmScore < 1.0 && filterResult.flaggedAttributes.length === 0) {
         question.status = 'published';
         await questionsCollection.insertOne(question);
+        console.log('Inserted Question:', question);     
+        console.log('Filter Result:', filterResult);
         return res.status(200).json({ success: true, message: "Question submitted successfully", filterResult });
 
       }else if(filterResult.harmScore >= 1.0 && filterResult.flaggedAttributes.length >= 1 && filterResult.harmScore < 6.0){
@@ -166,10 +168,14 @@ export default async function questions(AstraDB) {
         question.flaggedAttributes = filterResult.flaggedAttributes;
         question.harmScore = filterResult.harmScore;
         await questionsHeldCollection.insertOne(question);
+        console.log('Inserted Question:', question);     
+        console.log('Filter Result:', filterResult);
         return res.status(200).json({ success: true, message: "Question held for review due to harmful content", filterResult });
 
       }else if (filterResult.harmScore >= 6.0 && filterResult.flaggedAttributes.length >= 1){
 
+        console.log('Inserted Question:', question);     
+        console.log('Filter Result:', filterResult);
         return res.status(400).json({
           success: false,
           message: "Question contains harmful content and has been rejected",
