@@ -17,7 +17,7 @@ export default async function CreateServer(client,drive) {
     const app = express();
 
     app.use(cookieParser());
-    app.use(cors({ origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL, 'https://focushaven-testportal.netlify.app'], // ✅ Allow requests from the frontend
+    app.use(cors({ origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL, 'https://focushaven-testportal.netlify.app', 'https://www.focushaven.me', 'https://focushaven.me'], // ✅ Allow requests from the frontend
       credentials: true,                // ✅ Allow credentials (cookies)
     }));
       
